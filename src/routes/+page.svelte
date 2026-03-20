@@ -158,7 +158,15 @@
 
 		const blob = await res.blob();
 		const url = URL.createObjectURL(blob);
-		window.open(url);
+
+		// Criar link temporário para download
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `nota-servico-${dataServico.replace(/\//g, '-')}.pdf`;
+		link.click();
+
+		// Liberar memória
+		URL.revokeObjectURL(url);
 
 		// clean nos itens pré-definidos para evitar que sejam re-adicionados ao gerar o PDF
 		itensPreDefinidos = [];
