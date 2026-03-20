@@ -1,0 +1,52 @@
+{
+	"name": "Nota de Serviço - Ordem de Serviços",
+	"short_name": "Nota Serviço",
+	"description": "Sistema para geração de notas de serviço para técnicos de informática",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#2563eb",
+	"orientation": "portrait-primary",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any maskable"
+		}
+	],
+	"categories": ["business", "productivity", "utilities"],
+	"screenshots": [],
+	"shortcuts": [
+		{
+			"name": "Nova Nota",
+			"short_name": "Nova Nota",
+			"description": "Criar nova nota de serviço",
+			"url": "/",
+			"icons": [
+				{
+					"src": "/icon-192.png",
+					"sizes": "192x192"
+				}
+			]
+		},
+		{
+			"name": "Configurações",
+			"short_name": "Config",
+			"description": "Configurar dados da empresa",
+			"url": "/config",
+			"icons": [
+				{
+					"src": "/icon-192.png",
+					"sizes": "192x192"
+				}
+			]
+		}
+	]
+}
