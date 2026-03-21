@@ -31,6 +31,12 @@
 	const reCarregarItens = () => {
 		itens = carregarItens().map((item, index) => ({ ...item, id: index + 1 }));
 	};
+	const reCarregarItensPreDefinidos = () => {
+		itensPreDefinidos = carregarItensPreDefinidos().map((item, index) => ({
+			...item,
+			id: index + 1
+		}));
+	};
 	// Carregar metadados da empresa e itens salvos ao iniciar
 	onMount(() => {
 		metadata = carregarMetadata() || getMetadataDefault();
@@ -38,18 +44,7 @@
 		contatoEmpresa = metadata.dadosEmpresa.contato;
 
 		reCarregarItens();
-
-		// const itensSalvos = carregarItens();
-		// if (itensSalvos.length > 0) {
-		// 	itens = itensSalvos.map((item, index) => ({ ...item, id: index + 1 }));
-		// 	proximoId = itens.length + 1;
-		// }
-
-		const itensPreDefinitos = carregarItensPreDefinidos();
-		if (itensPreDefinitos.length > 0) {
-			itensPreDefinidos = itensPreDefinitos.map((item, index) => ({ ...item, id: index + 1 }));
-			proximoId = Math.max(proximoId, itensPreDefinidos.length + 1);
-		}
+		reCarregarItensPreDefinidos();
 	});
 
 	function adicionarItem() {
