@@ -164,7 +164,7 @@
 		const link = document.createElement('a');
 		link.href = url;
 		// data +horário para evitar nome de arquivo duplicado ex: yymmdd-hhmmss
-		const dataTimeExtract = getDataBRFormatada({ format: 'yyyyMMddHHmmss' });
+		const dataTimeExtract = getDataBRFormatada({ format: 'ddMMyyHHmmss' });
 		link.download = `nota-servico-${dataTimeExtract}.pdf`;
 		link.click();
 
