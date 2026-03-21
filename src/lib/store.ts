@@ -1,4 +1,4 @@
-import type { ItemServico, Metadata, BackupData, RestoreOptions } from './types';
+import type { ItemServico, Metadata, BackupData, RestoreOptions, RestoreResult } from './types';
 
 const ITENS_KEY = 'ordem-servicos-itens';
 const ITENS_PREDEFINIDOS_KEY = 'ordem-servicos-itens-predefinidos';
@@ -112,19 +112,83 @@ export function exportarBackup(): void {
 	URL.revokeObjectURL(url);
 }
 
-export function restaurarBackup(backup: BackupData, options: RestoreOptions): void {
-	if (typeof window === 'undefined') return;
-
-	if (options.restaurarMetadata && backup.metadata) {
-		salvarMetadata(backup.metadata);
+export function restaurarBackup(backup: BackupData, options: RestoreOptions): RestoreResult {
+	if (typeof window === 'undefined') {
+		return {
+			sucesso: false,
+			mensagem: 'Restauração só pode ser executada no navegador',
+			itensRestaurados: {
+				metadata: false,
+				itens: false,
+				itensPreDefinidos: false
+			}
+		};
 	}
 
-	if (options.restaurarItens) {
-		salvarItens(backup.itens || []);
-	}
+	const resultado: RestoreResult = {
+		sucesso: true,
+		mensagem: 'Backup restaurado com sucesso!',
+		itensRestaurados: {
+			metadata: false,
+			itens: false,
+			itensPreDefinidos: false
+		}
+	};
 
-	if (options.restaurarItensPreDefinidos) {
-		salvarItensPreDefinidos(backup.itensPreDefinidos || []);
+	try {
+		// Restaurar Metadata
+		if (options.restaurarMetadata && backup.metadata) {
+			salvarMetadata(backup.metadata);
+			// Verificar se foi salvo corretamente
+			const verificacao = carregarMetadata();
+			if (verificacao) {
+				resultado.itensRestaurados.metadata = true;
+			} else {
+				throw new Error('Falha ao salvar configurações da empresa');
+			}
+		}
+
+		// Restaurar Itens
+		if (options.restaurarItens) {
+			salvarItens(backup.itens || []);
+			// Verificar se foi salvo corretamente
+			const verificacao = carregarItens();
+			if (Array.isArray(verificacao)) {
+				resultado.itensRestaurados.itens = true;
+			} else {
+				throw new Error('Falha ao salvar itens de serviço');
+			}
+		}
+
+		// Restaurar Itens Pré-definidos
+		if (options.restaurarItensPreDefinidos) {
+			salvarItensPreDefinidos(backup.itensPreDefinidos || []);
+			// Verificar se foi salvo corretamente
+			const verificacao = carregarItensPreDefinidos();
+			if (Array.isArray(verificacao)) {
+				resultado.itensRestaurados.itensPreDefinidos = true;
+			} else {
+				throw new Error('Falha ao salvar itens pré-definidos');
+			}
+		}
+
+		// Disparar evento de storage para notificar outras abas/janelas
+		// Isso permite que outras abas abertas saibam que os dados mudaram
+		window.dispatchEvent(
+			new StorageEvent('storage', {
+				key: 'backup-restaurado',
+				newValue: new Date().toISOString(),
+				url: window.location.href
+			})
+		);
+
+		return resultado;
+	} catch (error) {
+		return {
+			sucesso: false,
+			mensagem: `Erro ao restaurar backup: ${(error as Error).message}`,
+			itensRestaurados: resultado.itensRestaurados
+		};
 	}
 }
 

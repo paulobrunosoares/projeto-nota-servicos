@@ -41,3 +41,13 @@ export interface RestoreOptions {
 	restaurarItens: boolean;
 	restaurarItensPreDefinidos: boolean;
 }
+
+export interface RestoreResult {
+	sucesso: boolean;
+	mensagem: string;
+	itensRestaurados: {
+		metadata: boolean;
+		itens: boolean;
+		itensPreDefinidos: boolean;
+	};
+}

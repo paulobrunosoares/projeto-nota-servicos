@@ -37,14 +37,35 @@
 			id: index + 1
 		}));
 	};
-	// Carregar metadados da empresa e itens salvos ao iniciar
-	onMount(() => {
+	// Função para recarregar todos os dados
+	const recarregarTodosDados = () => {
 		metadata = carregarMetadata() || getMetadataDefault();
 		nomeEmpresa = metadata.dadosEmpresa.nomeEmpresa;
 		contatoEmpresa = metadata.dadosEmpresa.contato;
-
 		reCarregarItens();
 		reCarregarItensPreDefinidos();
+	};
+
+	// Carregar metadados da empresa e itens salvos ao iniciar
+	onMount(() => {
+		recarregarTodosDados();
+
+		// Listener para mudanças no localStorage (backup restaurado em outra aba)
+		const handleStorageChange = (e: StorageEvent) => {
+			if (
+				e.key === 'ordem-servicos-metadata' ||
+				e.key === 'ordem-servicos-itens' ||
+				e.key === 'ordem-servicos-itens-predefinidos'
+			) {
+				recarregarTodosDados();
+			}
+		};
+
+		window.addEventListener('storage', handleStorageChange);
+
+		return () => {
+			window.removeEventListener('storage', handleStorageChange);
+		};
 	});
 
 	function adicionarItem() {
