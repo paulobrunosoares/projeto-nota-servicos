@@ -397,8 +397,36 @@
 
 				<!-- Pré-visualização dos Itens -->
 				{#if itensPreDefinidos.length > 0}
-					<div class="flex flex-col rounded-xl border border-gray-200 bg-gray-50 p-4">
-						<h2 class="mb-3 text-lg font-bold text-gray-800">Itens Adicionados</h2>
+					<div class="flex flex-col rounded-xl border border-gray-200 bg-gray-50 p-1 sm:p-4">
+						<div class="mb-1 flex items-center justify-between">
+							<h2 class="text-lg font-bold text-gray-800">Itens Pré-Definidos</h2>
+							<button
+								onclick={() => {
+									itensPreDefinidos = [];
+									salvarItensPreDefinidos([]);
+								}}
+								class="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-4 w-4"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+								>
+									<path
+										fill-rule="evenodd"
+										d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1	0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+								Limpar
+							</button>
+							<span
+								class="inline-block rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white"
+							>
+								{itensPreDefinidos.length} itens
+							</span>
+						</div>
 
 						<div class="flex flex-col overflow-hidden rounded-lg bg-white shadow-sm">
 							<!-- Cabeçalho da tabela -->
