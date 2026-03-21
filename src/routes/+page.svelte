@@ -9,6 +9,7 @@
 		salvarItensPreDefinidos
 	} from '$lib/store';
 	import type { ItemServico as ItemServicoBase, Metadata } from '$lib/types';
+	import { getDataBRFormatada } from '$lib/helper/format-date.helper';
 
 	interface ItemServico extends ItemServicoBase {
 		id: number;
@@ -162,7 +163,9 @@
 		// Criar link temporário para download
 		const link = document.createElement('a');
 		link.href = url;
-		link.download = `nota-servico-${dataServico.replace(/\//g, '-')}.pdf`;
+		// data +horário para evitar nome de arquivo duplicado ex: yymmdd-hhmmss
+		const dataTimeExtract = getDataBRFormatada({ format: 'yyyyMMddHHmmss' });
+		link.download = `nota-servico-${dataTimeExtract}.pdf`;
 		link.click();
 
 		// Liberar memória
