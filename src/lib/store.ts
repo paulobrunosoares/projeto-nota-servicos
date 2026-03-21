@@ -1,8 +1,9 @@
-import type { ItemServico, Metadata } from './types';
+import type { ItemServico, Metadata, BackupData, RestoreOptions } from './types';
 
 const ITENS_KEY = 'ordem-servicos-itens';
 const ITENS_PREDEFINIDOS_KEY = 'ordem-servicos-itens-predefinidos';
 const METADATA_KEY = 'ordem-servicos-metadata';
+const BACKUP_VERSION = '1.0.0';
 
 // Funções para gerenciar itens
 export function salvarItens(itens: ItemServico[]): void {
@@ -81,4 +82,62 @@ export function getMetadataDefault(): Metadata {
 			{ tipo: 'E-mail', chave: 'joao.silva@example.com' }
 		]
 	};
+}
+
+// Funções para Backup e Restauração
+export function criarBackup(): BackupData {
+	return {
+		versao: BACKUP_VERSION,
+		dataBackup: new Date().toISOString(),
+		metadata: carregarMetadata(),
+		itens: carregarItens(),
+		itensPreDefinidos: carregarItensPreDefinidos()
+	};
+}
+
+export function exportarBackup(): void {
+	if (typeof window === 'undefined') return;
+
+	const backup = criarBackup();
+	const json = JSON.stringify(backup, null, 2);
+	const blob = new Blob([json], { type: 'application/json' });
+	const url = URL.createObjectURL(blob);
+
+	const link = document.createElement('a');
+	const dataFormatada = new Date().toISOString().split('T')[0];
+	link.href = url;
+	link.download = `backup-nota-servicos-${dataFormatada}.json`;
+	link.click();
+
+	URL.revokeObjectURL(url);
+}
+
+export function restaurarBackup(backup: BackupData, options: RestoreOptions): void {
+	if (typeof window === 'undefined') return;
+
+	if (options.restaurarMetadata && backup.metadata) {
+		salvarMetadata(backup.metadata);
+	}
+
+	if (options.restaurarItens) {
+		salvarItens(backup.itens || []);
+	}
+
+	if (options.restaurarItensPreDefinidos) {
+		salvarItensPreDefinidos(backup.itensPreDefinidos || []);
+	}
+}
+
+export function validarBackup(data: unknown): data is BackupData {
+	if (!data || typeof data !== 'object') return false;
+
+	const backup = data as Partial<BackupData>;
+
+	return (
+		typeof backup.versao === 'string' &&
+		typeof backup.dataBackup === 'string' &&
+		(backup.metadata === null || typeof backup.metadata === 'object') &&
+		Array.isArray(backup.itens) &&
+		Array.isArray(backup.itensPreDefinidos)
+	);
 }

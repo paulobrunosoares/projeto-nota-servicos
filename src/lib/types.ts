@@ -27,3 +27,17 @@ export interface Metadata {
 	dadosConta: DadosConta;
 	chavesPix: ChavePix[];
 }
+
+export interface BackupData {
+	versao: string;
+	dataBackup: string;
+	metadata: Metadata | null;
+	itens: ItemServico[];
+	itensPreDefinidos: ItemServico[];
+}
+
+export interface RestoreOptions {
+	restaurarMetadata: boolean;
+	restaurarItens: boolean;
+	restaurarItensPreDefinidos: boolean;
+}
