@@ -339,7 +339,7 @@
 								<option value="">-- Selecione um serviço --</option>
 								{#each itens as item (item.id)}
 									<option value={JSON.stringify({ descricao: item.descricao, valor: item.valor })}>
-										{item.descricao} - R$ {formatarValor(item.valor)}
+										{item.descricao}
 									</option>
 								{/each}
 							</select>
