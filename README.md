@@ -43,6 +43,31 @@ Acesse via botão de engrenagem no canto superior direito para configurar:
 - Remova chaves desnecessárias
 - Todas as chaves aparecem no rodapé do PDF
 
+### 💾 Backup e Restauração
+Sistema completo de backup e restauração de dados:
+
+#### 🔄 Fazer Backup
+- **Exportação completa**: Salva todas as configurações e dados em arquivo JSON
+- **Nomenclatura automática**: `backup-ordem-servicos-YYYY-MM-DD.json`
+- **Backup inclui**:
+  - Configurações da empresa (nome, contato, subdescritivo)
+  - Dados bancários (titular, CPF, banco, agência, conta)
+  - Chaves PIX configuradas
+  - Lista de itens de serviço atuais
+  - Catálogo de itens pré-definidos
+- **Versionamento**: Arquivo contém versão e timestamp do backup
+
+#### ⚡ Restaurar Backup
+- **Seleção de arquivo**: Upload de arquivo JSON de backup
+- **Validação automática**: Verifica integridade do arquivo antes de restaurar
+- **Restauração seletiva**: Escolha quais dados deseja restaurar:
+  - ✅ Configurações da Empresa
+  - ✅ Itens de Serviço (com contagem)
+  - ✅ Itens Pré-definidos (com contagem)
+- **Pré-visualização**: Veja informações do backup antes de confirmar
+- **Confirmação de segurança**: Aviso antes de substituir dados atuais
+- **Feedback completo**: Resumo dos itens restaurados com sucesso
+
 ### 💾 Persistência de Dados (localStorage)
 - **Itens pré-definidos**: Liste seus serviços mais comuns
 - **Configurações da empresa**: Salvas automaticamente
@@ -106,6 +131,32 @@ Acesse via botão de engrenagem no canto superior direito para configurar:
 3. Selecione **"Adicionar à Tela de Início"**
 4. Confirme o nome e toque em "Adicionar"
 
+### Fazendo Backup e Restauração
+
+#### 📥 Criar Backup dos Dados
+1. Acesse a página de **Configurações** (ícone de engrenagem)
+2. Role até a seção **Backup e Restauração** (laranja)
+3. Clique em **"Baixar Backup"**
+4. Um arquivo JSON será baixado automaticamente
+5. Guarde o arquivo em local seguro
+
+**Importante**: O backup contém todas as suas configurações, dados bancários, chaves PIX e itens cadastrados.
+
+#### 📤 Restaurar Backup
+1. Acesse **Configurações** → **Backup e Restauração**
+2. Clique em **"Restaurar Backup"**
+3. Selecione o arquivo JSON de backup
+4. Na janela modal, escolha quais dados restaurar:
+   - **Configurações da Empresa**: Dados da empresa, bancários e PIX
+   - **Itens de Serviço**: Lista atual de itens em uso
+   - **Itens Pré-definidos**: Catálogo de serviços salvos
+5. Confira as informações do backup (data e quantidades)
+6. Clique em **"Confirmar Restauração"**
+7. Confirme a operação no alerta de segurança
+8. A página será recarregada automaticamente
+
+**Dica**: Use a restauração seletiva para migrar apenas parte dos dados ou combinar informações de diferentes backups.
+
 ## 🛠️ Tecnologias
 
 - **SvelteKit 5** - Framework web moderno com SSR
@@ -144,7 +195,13 @@ projeto-ordem-servicos-mnt/
 ├── src/
 │   ├── lib/
 │   │   ├── types.ts           # Interfaces TypeScript
-│   │   └── store.ts           # Funções localStorage
+│   │   ├── store.ts           # Funções localStorage e backup
+│   │   ├── components/
+│   │   │   ├── BackupRestauracao.svelte  # Componente de backup
+│   │   │   ├── index.ts       # Exportações de componentes
+│   │   │   └── README.md      # Documentação dos componentes
+│   │   └── helper/
+│   │       └── format-date.helper.ts  # Funções auxiliares
 │   ├── routes/
 │   │   ├── +page.svelte       # Página principal
 │   │   ├── +layout.svelte     # Layout global
@@ -161,6 +218,8 @@ projeto-ordem-servicos-mnt/
 │   ├── icon-192.png           # Ícone PWA 192x192
 │   ├── icon-512.png           # Ícone PWA 512x512
 │   └── robots.txt
+├── BACKUP-RESTAURACAO.md      # Documentação do sistema de backup
+├── REFATORACAO-BACKUP.md      # Documentação da refatoração
 ├── package.json
 ├── svelte.config.js
 ├── tsconfig.json
@@ -179,12 +238,20 @@ projeto-ordem-servicos-mnt/
 - As configurações são salvas automaticamente
 - Use a página de configuração sempre que mudar dados
 - Os dados permanecem mesmo após fechar o navegador
+- **Faça backups regulares** dos seus dados para segurança
+- Use a restauração seletiva para migrar ou atualizar dados específicos
 - Para "resetar", limpe os dados do site nas configurações do navegador
 
 ### PDFs Profissionais
 - Configure todos os dados da empresa antes de gerar o primeiro PDF
 - Os PDFs incluem automaticamente todas as informações configuradas
 - O formato é otimizado para impressão e visualização digital
+
+### Backup e Segurança
+- **Recomendação**: Faça backup semanalmente ou após mudanças importantes
+- Guarde os arquivos de backup em nuvem ou armazenamento externo
+- Teste a restauração ocasionalmente para garantir integridade dos dados
+- Use nomes descritivos ao salvar backups manualmente
 
 ## 📱 Compatibilidade PWA
 
@@ -210,6 +277,45 @@ Substitua os arquivos em `/static/`:
 - `icon-512.png` - Ícone 512x512px
 - Mantenha as dimensões para melhor compatibilidade
 
+## 🆕 Atualizações Recentes
+
+### v1.0.0 - Sistema de Backup e Restauração (Março 2026)
+
+#### ✨ Novos Recursos
+- **Sistema Completo de Backup**
+  - Exportação de todos os dados em formato JSON estruturado
+  - Nomenclatura automática com data do backup
+  - Versionamento do formato de backup para compatibilidade futura
+  - Validação de integridade do arquivo antes da restauração
+
+- **Restauração Seletiva Avançada**
+  - Modal interativo para escolher quais dados restaurar
+  - Pré-visualização das informações do backup (data, quantidades)
+  - Confirmação de segurança antes de sobrescrever dados
+  - Feedback detalhado sobre itens restaurados
+  - Recarga automática da página após restauração bem-sucedida
+
+#### 🔧 Melhorias Técnicas
+- **Refatoração de Componente BackupRestauracao**
+  - Criação de componente reutilizável e auto-contido
+  - Redução de ~140 linhas na página de configuração
+  - Separação clara de responsabilidades
+  - Documentação completa do componente em `src/lib/components/README.md`
+  - Sistema de exportação centralizado em `src/lib/components/index.ts`
+
+#### 📚 Documentação
+- Criado `BACKUP-RESTAURACAO.md` com guia completo do sistema
+- Criado `REFATORACAO-BACKUP.md` documentando mudanças arquiteturais
+- Atualizado README com seções de backup e restauração
+- Documentação de componentes para facilitar manutenção futura
+
+#### 🎯 Benefícios
+- Segurança de dados aprimorada com backups regulares
+- Migração facilitada entre dispositivos ou navegadores
+- Recuperação rápida em caso de perda de dados do localStorage
+- Flexibilidade para restaurar apenas dados específicos
+- Código mais limpo e manutenível
+
 ## 📄 Licença
 
 Este projeto está sob licença MIT. Sinta-se livre para usar e modificar.
@@ -217,23 +323,6 @@ Este projeto está sob licença MIT. Sinta-se livre para usar e modificar.
 ---
 
 **Desenvolvido com ❤️ usando SvelteKit e Svelte 5**
-- Feedback visual para ações do usuário
-- Campo de data pré-preenchido com data atual
-
-### Funcionalidades
-- Adição dinâmica de itens de serviço
-- Validação de campos obrigatórios
-- Cálculo automático do valor total
-- Remoção individual de itens
-- Formatação automática de valores em Real (R$)
-- Suporte a Enter para adicionar itens rapidamente
-
-### PDF Gerado
-- Cabeçalho com design profissional
-- Tabela formatada com bordas e cores alternadas
-- Linha de rodapé com total destacado
-- Melhor organização visual
-- Suporte a múltiplos itens
 
 ## 📝 Estrutura do Projeto
 
