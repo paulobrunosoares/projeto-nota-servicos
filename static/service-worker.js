@@ -1,9 +1,5 @@
-const CACHE_NAME = 'nota-servico-v1';
-const urlsToCache = [
-	'/',
-	'/config',
-	'/manifest.json'
-];
+const CACHE_NAME = 'nota-servico-v2'; // Incrementado para invalidar cache antigo
+const urlsToCache = ['/manifest.json'];
 
 // Instalação do Service Worker
 self.addEventListener('install', (event) => {
@@ -43,31 +39,34 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	// Para arquivos imutáveis do SvelteKit (_app/immutable/), sempre busca da rede
+	// Isso evita problemas com hashes desatualizados após rebuild
+	if (event.request.url.includes('/_app/immutable/')) {
+		event.respondWith(
+			fetch(event.request).catch(() => {
+				// Se offline, tenta do cache como fallback
+				return caches.match(event.request);
+			})
+		);
+		return;
+	}
+
+	// Para outras requisições (HTML, etc), usa estratégia Network First
 	event.respondWith(
-		caches.match(event.request).then((response) => {
-			// Retorna do cache se disponível
-			if (response) {
-				return response;
-			}
-
-			// Clona a requisição
-			const fetchRequest = event.request.clone();
-
-			return fetch(fetchRequest).then((response) => {
-				// Verifica se é uma resposta válida
-				if (!response || response.status !== 200 || response.type !== 'basic') {
-					return response;
+		fetch(event.request)
+			.then((response) => {
+				// Se a resposta é válida, cacheia antes de retornar
+				if (response && response.status === 200 && response.type === 'basic') {
+					const responseToCache = response.clone();
+					caches.open(CACHE_NAME).then((cache) => {
+						cache.put(event.request, responseToCache);
+					});
 				}
-
-				// Clona a resposta
-				const responseToCache = response.clone();
-
-				caches.open(CACHE_NAME).then((cache) => {
-					cache.put(event.request, responseToCache);
-				});
-
 				return response;
-			});
-		})
+			})
+			.catch(() => {
+				// Se offline, retorna do cache
+				return caches.match(event.request);
+			})
 	);
 });
