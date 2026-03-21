@@ -15,7 +15,7 @@
 		id: number;
 	}
 
-	let dataServico = $state(new Date().toLocaleDateString('pt-BR'));
+	let dataServico = $state(getDataBRFormatada({ format: 'ddMMyyyy' }));
 	let novaDescricao = $state('');
 	let novoValor = $state('');
 	let itens: ItemServico[] = $derived([]);
