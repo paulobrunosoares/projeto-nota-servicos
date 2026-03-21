@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { startHomeTour } from '$lib/helper/tour.helper';
 	import {
 		carregarMetadata,
 		getMetadataDefault,
@@ -62,6 +63,14 @@
 		};
 
 		window.addEventListener('storage', handleStorageChange);
+
+		// Disparar tour se for o primeiro acesso
+		if (!localStorage.getItem('tourHomeRealizado')) {
+			setTimeout(() => {
+				startHomeTour();
+				localStorage.setItem('tourHomeRealizado', 'true');
+			}, 500);
+		}
 
 		return () => {
 			window.removeEventListener('storage', handleStorageChange);
@@ -208,24 +217,37 @@
 						<h1 class="text-2xl font-bold text-white">Nota de Serviço</h1>
 						<p class="mt-1 text-sm text-blue-100">{nomeEmpresa}</p>
 					</div>
-					<button
-						onclick={() => (window.location.href = '/config')}
-						class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-5 w-5"
-							viewBox="0 0 20 20"
-							fill="currentColor"
+					<div class="flex flex-row gap-2">
+						<button
+							onclick={() => startHomeTour()}
+							class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
+							title="Guia de Uso"
 						>
-							<path
-								fill-rule="evenodd"
-								d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-						<span class="hidden sm:inline">Configurações</span>
-					</button>
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+							</svg>
+							<span class="hidden sm:inline">Ajuda</span>
+						</button>
+						<button
+							id="btn-config"
+							onclick={() => (window.location.href = '/config')}
+							class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-5 w-5"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span class="hidden sm:inline">Configurações</span>
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -246,7 +268,7 @@
 				</div>
 
 				<!-- Seção de Adicionar Item -->
-				<div class="rounded-xl border border-blue-100 bg-blue-50 p-2">
+				<div id="tour-add-item" class="rounded-xl border border-blue-100 bg-blue-50 p-2">
 					<div class="flex items-center justify-between">
 						<h2 class="mb-3 text-lg font-bold text-gray-800">Adicionar Item de Serviço</h2>
 						<span
@@ -397,6 +419,7 @@
 						</div>
 					</div>
 					<button
+						id="btn-adicionar"
 						onclick={adicionarItem}
 						class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white transition-colors duration-200 hover:bg-blue-700"
 					>
@@ -417,6 +440,7 @@
 				</div>
 
 				<!-- Pré-visualização dos Itens -->
+				<div id="tour-itens-nota">
 				{#if itensPreDefinidos.length > 0}
 					<div class="flex flex-col rounded-xl border border-gray-200 bg-gray-50 p-1 sm:p-4">
 						<div class="mb-1 flex items-center justify-between">
@@ -547,9 +571,11 @@
 						</p>
 					</div>
 				{/if}
+				</div>
 
 				<!-- Botão Gerar PDF -->
 				<button
+					id="btn-gerar-pdf"
 					onclick={gerarPDF}
 					disabled={itensPreDefinidos.length === 0}
 					class="flex w-full transform items-center justify-center gap-2 rounded-lg bg-linear-to-r from-green-600 to-green-700 px-6 py-3 font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-green-700 hover:to-green-800 hover:shadow-xl disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"

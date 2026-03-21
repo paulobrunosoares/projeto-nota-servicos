@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { startConfigTour } from '$lib/helper/tour.helper';
 	import { salvarMetadata, carregarMetadata, getMetadataDefault } from '$lib/store';
 	import type { ChavePix } from '$lib/types';
 	import { BackupRestauracao } from '$lib/components';
@@ -42,6 +43,14 @@
 		};
 
 		window.addEventListener('storage', handleStorageChange);
+
+		// Disparar tour se for o primeiro acesso
+		if (!localStorage.getItem('tourConfigRealizado')) {
+			setTimeout(() => {
+				startConfigTour();
+				localStorage.setItem('tourConfigRealizado', 'true');
+			}, 500);
+		}
 
 		return () => {
 			window.removeEventListener('storage', handleStorageChange);
@@ -99,19 +108,31 @@
 						<h1 class="text-2xl font-bold text-white">Configurações da Empresa</h1>
 						<p class="mt-1 text-sm text-purple-100">Gerencie os dados da sua empresa</p>
 					</div>
-					<button
-						onclick={voltar}
-						class="rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
-					>
-						← Voltar
-					</button>
+					<div class="flex flex-row gap-2">
+						<button
+							onclick={() => startConfigTour()}
+							class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
+							title="Guia de Uso"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+							</svg>
+							<span class="hidden sm:inline">Ajuda</span>
+						</button>
+						<button
+							onclick={voltar}
+							class="rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30"
+						>
+							← Voltar
+						</button>
+					</div>
 				</div>
 			</div>
 
 			<!-- Conteúdo -->
 			<div class="flex-1 space-y-6 overflow-y-auto p-6">
 				<!-- Dados da Empresa -->
-				<div class="rounded-xl border border-purple-100 bg-purple-50 p-4">
+				<div id="tour-dados-empresa" class="rounded-xl border border-purple-100 bg-purple-50 p-4">
 					<h2 class="mb-3 text-lg font-bold text-gray-800">Dados da Empresa</h2>
 
 					<div class="space-y-3">
@@ -157,7 +178,7 @@
 				</div>
 
 				<!-- Dados Bancários -->
-				<div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+				<div id="tour-dados-bancarios" class="rounded-xl border border-blue-100 bg-blue-50 p-4">
 					<h2 class="mb-3 text-lg font-bold text-gray-800">Dados Bancários</h2>
 
 					<div class="space-y-3">
@@ -229,7 +250,7 @@
 				</div>
 
 				<!-- Chaves PIX -->
-				<div class="rounded-xl border border-green-100 bg-green-50 p-4">
+				<div id="tour-chaves-pix" class="rounded-xl border border-green-100 bg-green-50 p-4">
 					<h2 class="mb-3 text-lg font-bold text-gray-800">Chaves PIX</h2>
 
 					<div class="mb-3 grid gap-3 md:grid-cols-2">
@@ -321,10 +342,11 @@
 				</div>
 
 				<!-- Backup e Restauração -->
-				<BackupRestauracao />
+				<div id="tour-backup"><BackupRestauracao /></div>
 
 				<!-- Botão Salvar -->
 				<button
+					id="btn-salvar-config"
 					onclick={salvar}
 					class="flex w-full transform items-center justify-center gap-2 rounded-lg bg-linear-to-r from-purple-600 to-purple-700 px-6 py-3 font-bold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-purple-700 hover:to-purple-800 hover:shadow-xl"
 				>
