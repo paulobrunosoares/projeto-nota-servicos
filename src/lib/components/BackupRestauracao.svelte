@@ -1,6 +1,14 @@
 <script lang="ts">
-	import { exportarBackup, restaurarBackup, validarBackup } from '$lib/store';
-	import type { BackupData } from '$lib/types';
+	import { exportarDados, importarDados } from '$lib/stores/itensStore';
+	import type { ItemServico, Metadata } from '$lib/types';
+
+	interface BackupData {
+		versao: string;
+		dataBackup: string;
+		metadata: Metadata | null;
+		itens: ItemServico[];
+		itensPreDefinidos: ItemServico[];
+	}
 
 	// Estado do componente
 	let mostrarModalRestaurar = $state(false);
@@ -9,11 +17,36 @@
 	let restaurarItens = $state(true);
 	let restaurarItensPreDefinidos = $state(true);
 	let fileInput: HTMLInputElement | null = null;
+	let carregando = $state(false);
 
 	// Funções de Backup
-	function fazerBackup() {
-		exportarBackup();
-		alert('Backup criado com sucesso!');
+	async function fazerBackup() {
+		try {
+			const dados = await exportarDados();
+			const backup: BackupData = {
+				versao: '2.0.0',
+				dataBackup: dados.dataExportacao,
+				metadata: dados.metadata,
+				itens: dados.itens,
+				itensPreDefinidos: dados.itensPreDefinidos
+			};
+			
+			const json = JSON.stringify(backup, null, 2);
+			const blob = new Blob([json], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+
+			const link = document.createElement('a');
+			const dataFormatada = new Date().toISOString().split('T')[0];
+			link.href = url;
+			link.download = `backup-nota-servicos-${dataFormatada}.json`;
+			link.click();
+
+			URL.revokeObjectURL(url);
+			alert('Backup criado com sucesso!');
+		} catch (error) {
+			console.error('Erro ao criar backup:', error);
+			alert('Erro ao criar backup: ' + (error as Error).message);
+		}
 	}
 
 	function selecionarArquivoBackup() {
@@ -30,7 +63,8 @@
 			const texto = await file.text();
 			const dados = JSON.parse(texto);
 
-			if (!validarBackup(dados)) {
+			// Validar estrutura básica
+			if (!dados || typeof dados !== 'object' || !dados.dataBackup) {
 				alert('Arquivo de backup inválido!');
 				return;
 			}
@@ -45,7 +79,7 @@
 		input.value = '';
 	}
 
-	function confirmarRestauracao() {
+	async function confirmarRestauracao() {
 		if (!backupParaRestaurar) return;
 
 		const confirmacao = confirm(
@@ -54,20 +88,21 @@
 
 		if (!confirmacao) return;
 
-		// Executar restauração
-		const resultado = restaurarBackup(backupParaRestaurar, {
-			restaurarMetadata,
-			restaurarItens,
-			restaurarItensPreDefinidos
-		});
+		carregando = true;
 
-		// Verificar resultado
-		if (resultado.sucesso) {
+		try {
+			// Executar restauração
+			await importarDados({
+				metadata: restaurarMetadata ? backupParaRestaurar.metadata || undefined : undefined,
+				itens: restaurarItens ? backupParaRestaurar.itens : undefined,
+				itensPreDefinidos: restaurarItensPreDefinidos ? backupParaRestaurar.itensPreDefinidos : undefined
+			});
+
 			// Mostrar quais itens foram restaurados
 			const itensRestaurados = [];
-			if (resultado.itensRestaurados.metadata) itensRestaurados.push('Configurações');
-			if (resultado.itensRestaurados.itens) itensRestaurados.push('Itens de Serviço');
-			if (resultado.itensRestaurados.itensPreDefinidos)
+			if (restaurarMetadata && backupParaRestaurar.metadata) itensRestaurados.push('Configurações');
+			if (restaurarItens && backupParaRestaurar.itens.length > 0) itensRestaurados.push('Itens de Serviço');
+			if (restaurarItensPreDefinidos && backupParaRestaurar.itensPreDefinidos.length > 0)
 				itensRestaurados.push('Itens Pré-definidos');
 
 			const mensagem =
@@ -79,14 +114,15 @@
 
 			// Só recarregar se algo foi restaurado
 			if (itensRestaurados.length > 0) {
-				// Pequeno delay para garantir que o localStorage foi atualizado
 				setTimeout(() => {
 					window.location.reload();
 				}, 100);
 			}
-		} else {
-			// Mostrar erro
-			alert(`Erro na restauração!\n\n${resultado.mensagem}\n\nPor favor, tente novamente.`);
+		} catch (error) {
+			console.error('Erro na restauração:', error);
+			alert(`Erro na restauração!\n\n${(error as Error).message}\n\nPor favor, tente novamente.`);
+		} finally {
+			carregando = false;
 		}
 	}
 
@@ -271,16 +307,27 @@
 				<div class="flex gap-3">
 					<button
 						onclick={cancelarRestauracao}
-						class="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+						disabled={carregando}
+						class="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed"
 					>
 						Cancelar
 					</button>
 					<button
 						onclick={confirmarRestauracao}
-						disabled={!restaurarMetadata && !restaurarItens && !restaurarItensPreDefinidos}
+						disabled={carregando || (!restaurarMetadata && !restaurarItens && !restaurarItensPreDefinidos)}
 						class="flex-1 rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:bg-gray-300"
 					>
-						Restaurar
+						{#if carregando}
+							<span class="flex items-center justify-center gap-2">
+								<svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+								</svg>
+								Restaurando...
+							</span>
+						{:else}
+							Restaurar
+						{/if}
 					</button>
 				</div>
 			</div>

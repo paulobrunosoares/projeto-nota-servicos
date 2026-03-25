@@ -7,10 +7,13 @@
 		salvarItens,
 		carregarItens,
 		carregarItensPreDefinidos,
-		salvarItensPreDefinidos
-	} from '$lib/store';
+		salvarItensPreDefinidos,
+		removerItem as removerItemDB,
+		removerItemPreDefinido as removerItemPreDefinidoDB
+	} from '$lib/stores/itensStore';
 	import type { ItemServico as ItemServicoBase, Metadata } from '$lib/types';
 	import { getDataBRFormatada } from '$lib/helper/format-date.helper';
+	import { inicializarApp } from '$lib/utils/migrateLocalStorage';
 
 	interface ItemServico extends ItemServicoBase {
 		id: number;
@@ -21,7 +24,7 @@
 	let novoValor = $state('');
 	let itens: ItemServico[] = $derived([]);
 	let itensPreDefinidos: ItemServico[] = $state([]);
-	let proximoId = 1;
+	let proximoId = $derived(Math.max(0, ...itens.map(i => i.id)) + 1);
 	let nomeEmpresa = $state('Minha Empresa LTDA');
 	let contatoEmpresa = $state('(21) 98663-3011');
 	let servicoSelecionado = $state('');
@@ -29,40 +32,32 @@
 
 	let valorTotal = $derived(itensPreDefinidos.reduce((acc, item) => acc + item.valor, 0));
 
-	const reCarregarItens = () => {
-		itens = carregarItens().map((item, index) => ({ ...item, id: index + 1 }));
+	const reCarregarItens = async () => {
+		const itensDB = await carregarItens();
+		itens = itensDB;
 	};
-	const reCarregarItensPreDefinidos = () => {
-		itensPreDefinidos = carregarItensPreDefinidos().map((item, index) => ({
-			...item,
-			id: index + 1
-		}));
+	
+	const reCarregarItensPreDefinidos = async () => {
+		const itensDB = await carregarItensPreDefinidos();
+		itensPreDefinidos = itensDB;
 	};
+	
 	// Função para recarregar todos os dados
-	const recarregarTodosDados = () => {
-		metadata = carregarMetadata() || getMetadataDefault();
+	const recarregarTodosDados = async () => {
+		const metadataDB = await carregarMetadata();
+		metadata = metadataDB || getMetadataDefault();
 		nomeEmpresa = metadata.dadosEmpresa.nomeEmpresa;
 		contatoEmpresa = metadata.dadosEmpresa.contato;
-		reCarregarItens();
-		reCarregarItensPreDefinidos();
+		await reCarregarItens();
+		await reCarregarItensPreDefinidos();
 	};
 
 	// Carregar metadados da empresa e itens salvos ao iniciar
 	onMount(() => {
-		recarregarTodosDados();
-
-		// Listener para mudanças no localStorage (backup restaurado em outra aba)
-		const handleStorageChange = (e: StorageEvent) => {
-			if (
-				e.key === 'ordem-servicos-metadata' ||
-				e.key === 'ordem-servicos-itens' ||
-				e.key === 'ordem-servicos-itens-predefinidos'
-			) {
-				recarregarTodosDados();
-			}
-		};
-
-		window.addEventListener('storage', handleStorageChange);
+		// Inicializar app e migrar dados se necessário
+		inicializarApp().then(() => {
+			recarregarTodosDados();
+		});
 
 		// Disparar tour se for o primeiro acesso
 		if (!localStorage.getItem('tourHomeRealizado')) {
@@ -71,13 +66,9 @@
 				localStorage.setItem('tourHomeRealizado', 'true');
 			}, 500);
 		}
-
-		return () => {
-			window.removeEventListener('storage', handleStorageChange);
-		};
 	});
 
-	function adicionarItem() {
+	async function adicionarItem() {
 		if (!novaDescricao.trim() || !novoValor.trim()) {
 			alert('Preencha a descrição e o valor do item');
 			return;
@@ -89,36 +80,34 @@
 			return;
 		}
 
-		itensPreDefinidos = [
-			...itensPreDefinidos,
-			{
-				id: proximoId++,
-				descricao: novaDescricao.trim(),
-				valor: valor
-			}
-		];
+		const novoItem = {
+			descricao: novaDescricao.trim(),
+			valor: valor
+		};
 
-		// verificar se o item adicionado já existe na lista de itens predefinidos
+		// verificar se o item adicionado já existe na lista de itens
 		const itemExistente = itens?.find(
 			(item) => item.descricao === novaDescricao.trim() && item.valor === valor
 		);
 
 		if (!itemExistente) {
-			// console.log('itemExistente: ', itemExistente, itens.length);
-			// Salvar itens no localStorage
-			itens.push({ id: proximoId++, descricao: novaDescricao.trim(), valor });
-			const itensSemId = itens.length
-				? itens.map(({ descricao, valor }) => ({ descricao, valor }))
-				: [{ descricao: novaDescricao.trim(), valor }];
-			salvarItens(itensSemId);
-			reCarregarItens();
+			// Adicionar aos itens salvos no IndexedDB
+			await salvarItens([...itens, novoItem]);
+			await reCarregarItens();
 		}
 
-		const itensPreDefinidosSemId = itensPreDefinidos.map(({ descricao, valor }) => ({
-			descricao,
-			valor
-		}));
-		salvarItensPreDefinidos(itensPreDefinidosSemId);
+		// Adicionar aos itens pré-definidos (lista temporária para o PDF)
+		const idPreDefinido = await carregarItensPreDefinidos().then(itens => 
+			Math.max(0, ...itens.map(i => i.id)) + 1
+		);
+		itensPreDefinidos = [
+			...itensPreDefinidos,
+			{
+				id: idPreDefinido,
+				...novoItem
+			}
+		];
+		await salvarItensPreDefinidos(itensPreDefinidos);
 
 		novaDescricao = '';
 		novoValor = '';
@@ -133,26 +122,14 @@
 		}
 	}
 
-	function removerItem(id: number) {
-		itens = itens.filter((item) => item.id !== id);
-
-		// Salvar itens atualizados no localStorage
-		const itensSemId = itens.map(({ descricao, valor }) => ({
-			descricao,
-			valor
-		}));
-		salvarItens(itensSemId);
+	async function removerItem(id: number) {
+		await removerItemDB(id);
+		await reCarregarItens();
 	}
 
-	function removerItemPreDefinidos(id: number) {
-		itensPreDefinidos = itensPreDefinidos.filter((item) => item.id !== id);
-
-		// Salvar itens atualizados no localStorage
-		const itensPreDefinidosSemId = itensPreDefinidos.map(({ descricao, valor }) => ({
-			descricao,
-			valor
-		}));
-		salvarItensPreDefinidos(itensPreDefinidosSemId);
+	async function removerItemPreDefinidos(id: number) {
+		await removerItemPreDefinidoDB(id);
+		await reCarregarItensPreDefinidos();
 	}
 
 	function formatarValor(valor: number): string {
@@ -169,7 +146,8 @@
 		}
 
 		// Recarregar metadata para garantir que esteja atualizado
-		metadata = carregarMetadata() || getMetadataDefault();
+		const metadataDB = await carregarMetadata();
+		metadata = metadataDB || getMetadataDefault();
 
 		const res = await fetch('/api/pdf', {
 			method: 'POST',
@@ -198,7 +176,7 @@
 
 		// clean nos itens pré-definidos para evitar que sejam re-adicionados ao gerar o PDF
 		itensPreDefinidos = [];
-		salvarItensPreDefinidos([]);
+		await salvarItensPreDefinidos([]);
 	}
 
 	let viewItenssalvos = $state(false);
@@ -446,9 +424,9 @@
 						<div class="mb-1 flex items-center justify-between">
 							<h2 class="text-lg font-bold text-gray-800">Itens Pré-Definidos</h2>
 							<button
-								onclick={() => {
+								onclick={async () => {
 									itensPreDefinidos = [];
-									salvarItensPreDefinidos([]);
+									await salvarItensPreDefinidos([]);
 								}}
 								class="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-700"
 							>

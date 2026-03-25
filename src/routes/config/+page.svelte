@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { startConfigTour } from '$lib/helper/tour.helper';
-	import { salvarMetadata, carregarMetadata, getMetadataDefault } from '$lib/store';
+	import { salvarMetadata, carregarMetadata, getMetadataDefault } from '$lib/stores/itensStore';
 	import type { ChavePix } from '$lib/types';
 	import { BackupRestauracao } from '$lib/components';
+	import { inicializarApp } from '$lib/utils/migrateLocalStorage';
 
 	let nomeEmpresa = $state('');
 	let contato = $state('');
@@ -19,8 +20,8 @@
 	let novaChavePix = $state('');
 
 	// Função para recarregar todos os dados
-	const recarregarDados = () => {
-		const metadata = carregarMetadata() || getMetadataDefault();
+	const recarregarDados = async () => {
+		const metadata = await carregarMetadata() || getMetadataDefault();
 		nomeEmpresa = metadata.dadosEmpresa.nomeEmpresa;
 		contato = metadata.dadosEmpresa.contato;
 		subDescricao = metadata.dadosEmpresa.subDescricao;
@@ -33,16 +34,10 @@
 	};
 
 	onMount(() => {
-		recarregarDados();
-
-		// Listener para mudanças no localStorage (backup restaurado em outra aba)
-		const handleStorageChange = (e: StorageEvent) => {
-			if (e.key === 'ordem-servicos-metadata') {
-				recarregarDados();
-			}
-		};
-
-		window.addEventListener('storage', handleStorageChange);
+		// Inicializar app e migrar dados se necessário
+		inicializarApp().then(() => {
+			recarregarDados();
+		});
 
 		// Disparar tour se for o primeiro acesso
 		if (!localStorage.getItem('tourConfigRealizado')) {
@@ -51,10 +46,6 @@
 				localStorage.setItem('tourConfigRealizado', 'true');
 			}, 500);
 		}
-
-		return () => {
-			window.removeEventListener('storage', handleStorageChange);
-		};
 	});
 
 	function adicionarChavePix() {
@@ -72,7 +63,7 @@
 		chavesPix = chavesPix.filter((_, i) => i !== index);
 	}
 
-	function salvar() {
+	async function salvar() {
 		const metadata = {
 			dadosEmpresa: {
 				nomeEmpresa,
@@ -89,7 +80,7 @@
 			chavesPix
 		};
 
-		salvarMetadata(metadata);
+		await salvarMetadata(metadata);
 		alert('Configurações salvas com sucesso!');
 	}
 

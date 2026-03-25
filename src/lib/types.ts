@@ -51,3 +51,12 @@ export interface RestoreResult {
 		itensPreDefinidos: boolean;
 	};
 }
+
+export interface MigracaoStatus {
+	migrado: boolean;
+	dataMigracao: string | null;
+	itensMigrados: number;
+	itensPreDefinidosMigrados: number;
+	metadataMigrada: boolean;
+	erro?: string;
+}
