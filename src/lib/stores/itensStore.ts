@@ -1,7 +1,7 @@
 /**
  * Store persistente para Itens de Serviço usando IndexedDB
  * Substitui o localStorage pelo IndexedDB para maior capacidade e performance
- * 
+ *
  * NOTA: Todas as funções são assíncronas e só funcionam no browser.
  * No servidor, retornam valores vazios/default.
  */
@@ -35,7 +35,7 @@ export async function carregarItens(): Promise<ItemServicoComId[]> {
  */
 export async function salvarItens(itens: ItemServico[]): Promise<void> {
 	await indexedDBService.clear('itens');
-	
+
 	if (itens.length > 0) {
 		// Adicionar IDs sequenciais se não existirem
 		const itensComId = itens.map((item, index) => ({
@@ -82,7 +82,7 @@ export async function carregarItensPreDefinidos(): Promise<ItemServicoComId[]> {
  */
 export async function salvarItensPreDefinidos(itens: ItemServico[]): Promise<void> {
 	await indexedDBService.clear('itensPreDefinidos');
-	
+
 	if (itens.length > 0) {
 		const itensComId = itens.map((item, index) => ({
 			...item,
@@ -121,6 +121,7 @@ const METADATA_CHAVE = 'empresa';
  * Carregar metadata da empresa
  */
 export async function carregarMetadata(): Promise<Metadata | null> {
+	await indexedDBService.init();
 	const result = await indexedDBService.get<MetadataComChave>('metadata', METADATA_CHAVE);
 	return result?.dados || null;
 }
@@ -129,6 +130,7 @@ export async function carregarMetadata(): Promise<Metadata | null> {
  * Salvar metadata da empresa
  */
 export async function salvarMetadata(metadata: Metadata): Promise<void> {
+	await indexedDBService.init();
 	await indexedDBService.put('metadata', {
 		chave: METADATA_CHAVE,
 		dados: metadata
@@ -143,7 +145,8 @@ export function getMetadataDefault(): Metadata {
 		dadosEmpresa: {
 			nomeEmpresa: 'Minha Empresa LTDA',
 			contato: '(11) 1234-5678',
-			subDescricao: 'Serviços de qualidade para você'
+			subDescricao: 'Serviços de qualidade para você',
+			cidade: 'São Paulo'
 		},
 		dadosConta: {
 			nome: 'João da Silva',

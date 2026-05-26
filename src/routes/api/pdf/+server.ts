@@ -3,6 +3,7 @@
 // ================================
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type Color } from 'pdf-lib';
+import { gerarQRCodePixSimples } from '$lib/utils/pixHelper';
 
 interface ItemServico {
 	id: number;
@@ -19,6 +20,7 @@ interface DadosEmpresa {
 	nomeEmpresa: string;
 	contato: string;
 	subDescricao: string;
+	cidade: string;
 }
 
 interface DadosConta {
@@ -240,7 +242,12 @@ export async function POST({ request }) {
 	});
 
 	// === RODAPÉ ===
-	let footerY = 110;
+	let footerY = 130;
+
+	if (metadata.chavesPix.length > 1) {
+		const multiplicadorChavesPix = metadata.chavesPix.length;
+		footerY += 10 * multiplicadorChavesPix; // Ajuste para mais chaves PIX
+	}
 
 	// Dados Bancários
 	if (metadata.dadosConta && metadata.dadosConta.banco && metadata.dadosConta.banco.trim() !== '') {
@@ -289,6 +296,24 @@ export async function POST({ request }) {
 
 	// Chaves PIX
 	if (metadata.chavesPix && metadata.chavesPix.length > 0) {
+		// Gerar QR Code Pix Simples (apenas o texto da chave)
+		let qrCodeImage = null;
+		let textoChave = '';
+
+		try {
+			const qrCodeData = await gerarQRCodePixSimples(metadata.chavesPix);
+
+			if (qrCodeData) {
+				// Remover o prefixo "data:image/png;base64," do data URL
+				const base64Data = qrCodeData.qrCodeDataURL.split(',')[1];
+				const imageBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+				qrCodeImage = await pdfDoc.embedPng(imageBytes);
+				textoChave = qrCodeData.textoChave;
+			}
+		} catch (error) {
+			console.error('Erro ao gerar QR Code:', error);
+		}
+
 		drawText('Pagamento via PIX:', 50, footerY, {
 			font: fontBold,
 			size: 10,
@@ -296,16 +321,45 @@ export async function POST({ request }) {
 		});
 		footerY -= 15;
 
+		// Guardar posição inicial para o QR Code
+		const qrCodeStartY = footerY;
+
 		metadata.chavesPix.forEach((chavePix) => {
-			const textoChave = `${chavePix.tipo}: ${chavePix.chave}`;
-			drawText(textoChave, 50, footerY, {
+			const textoChaveDisplay = `${chavePix.tipo}: ${chavePix.chave}`;
+			drawText(textoChaveDisplay, 50, footerY, {
 				size: 9,
 				color: rgb(0.3, 0.3, 0.3)
 			});
 			footerY -= 14;
 		});
 
-		footerY -= 5;
+		// Desenhar QR Code no lado direito, se disponível
+		if (qrCodeImage) {
+			const qrSize = 100;
+			const qrX = width - 150;
+			const qrY = qrCodeStartY - 10; // Posição fixa baseada no início da seção
+
+			page.drawImage(qrCodeImage, {
+				x: qrX,
+				y: qrY,
+				width: qrSize,
+				height: qrSize
+			});
+
+			// Texto abaixo do QR Code
+			drawText('Escaneie para copiar:', qrX, qrY - 15, {
+				size: 8,
+				color: rgb(0.4, 0.4, 0.4)
+			});
+
+			// Mostrar o valor literal da chave
+			drawText(textoChave, qrX, qrY - 27, {
+				size: 7,
+				color: rgb(0.5, 0.5, 0.5)
+			});
+		}
+
+		footerY -= 10;
 	}
 
 	// Linha separadora do rodapé

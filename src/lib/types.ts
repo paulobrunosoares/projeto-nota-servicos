@@ -12,6 +12,7 @@ export interface DadosEmpresa {
 	nomeEmpresa: string;
 	contato: string;
 	subDescricao: string;
+	cidade: string;
 }
 
 export interface DadosConta {

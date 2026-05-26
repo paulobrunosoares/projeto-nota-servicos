@@ -68,7 +68,8 @@ export function getMetadataDefault(): Metadata {
 		dadosEmpresa: {
 			nomeEmpresa: 'Minha Empresa LTDA',
 			contato: '(11) 1234-5678',
-			subDescricao: 'Serviços de qualidade para você'
+			subDescricao: 'Serviços de qualidade para você',
+			cidade: 'São Paulo'
 		},
 		dadosConta: {
 			nome: 'João da Silva',
